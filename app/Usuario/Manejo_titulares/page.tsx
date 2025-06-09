@@ -27,7 +27,7 @@ interface Titular {
   donanteOrganos: boolean
 }
 
-export default function TitularManager() {
+export default function Page() {
   const [currentView, setCurrentView] = useState<"main" | "crear" | "buscar" | "resultado">("main")
   const [searchQuery, setSearchQuery] = useState("")
   const [titular, setTitular] = useState<Titular>({
