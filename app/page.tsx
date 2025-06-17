@@ -1,7 +1,8 @@
-"use client"
 
-import Page from "@/app/Usuario/Manejo_titulares/page"
 
-export default function Page() {
-  return <Page />
+import LoginPage from "@/app/Login/page"
+import {JSX} from "react";
+
+export default function Page(): JSX.Element {
+  return <LoginPage />
 }

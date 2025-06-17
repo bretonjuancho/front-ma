@@ -1,0 +1,9 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/Usuario/buscar-titular/page": "app/Usuario/buscar-titular/page.js",
+  "/Login/page": "app/Login/page.js",
+  "/Usuario/page": "app/Usuario/page.js",
+  "/Usuario/tramite-completado/page": "app/Usuario/tramite-completado/page.js",
+  "/Usuario/datos-titular/page": "app/Usuario/datos-titular/page.js",
+  "/Admin/page": "app/Admin/page.js"
+}

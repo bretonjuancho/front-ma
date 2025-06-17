@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { UserPlusIcon } from "lucide-react"
+import { UserPlusIcon, SearchIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 export default function AdminInicioPage() {
@@ -24,6 +24,15 @@ export default function AdminInicioPage() {
                         >
                             <UserPlusIcon className="mr-2 h-5 w-5" />
                             Crear Usuario
+                        </Button>
+
+                        <Button
+                            onClick={() => router.push("/admin/consultar-titular")}
+                            className="w-full h-16 text-lg"
+                            variant="outline"
+                        >
+                            <SearchIcon className="mr-2 h-5 w-5" />
+                            Consultar Titular
                         </Button>
                     </CardContent>
                 </Card>
