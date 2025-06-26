@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { User, Search } from "lucide-react"
+import { User, Search, FileText } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 export default function UsuarioInicioPage() {
@@ -36,6 +36,17 @@ export default function UsuarioInicioPage() {
               <Search className="mr-2 h-5 w-5" />
               Buscar un Titular
             </Button>
+
+            {/* Obtener Licencias */}
+            <Button
+                onClick={() => router.push("/Usuario/licencias")}
+                className="w-full h-16 text-lg"
+                variant="secondary"
+            >
+              <FileText className="mr-2 h-5 w-5" />
+              Obtener Licencias
+            </Button>
+
           </CardContent>
         </Card>
       </div>

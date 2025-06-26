@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, RefreshCw, Copy } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import type { Titular } from "@/lib/types"
@@ -37,6 +37,31 @@ export default function DatosTitularPage() {
       localStorage.setItem("titularParaLicencia", JSON.stringify(titular))
       router.push("/Usuario/crear-licencia")
     }
+  }
+
+  const handleRenovarLicencia = (licencia: any) => {
+    if (titular) {
+      // Guardar datos para la renovación
+      localStorage.setItem("titularParaRenovacion", JSON.stringify(titular))
+      localStorage.setItem("licenciaParaRenovar", JSON.stringify(licencia))
+      router.push("/Usuario/renovar-licencia")
+    }
+  }
+
+  const handleCopiarLicencia = (licencia: any) => {
+    if (titular) {
+      // Guardar datos para la copia
+      localStorage.setItem("titularParaCopia", JSON.stringify(titular))
+      localStorage.setItem("licenciaParaCopiar", JSON.stringify(licencia))
+      router.push("/Usuario/copiar-licencia")
+    }
+  }
+
+  // Función para calcular fecha de expiración
+  const calcularFechaExpiracion = (fechaCreacion: Date) => {
+    const fechaExpiracion = new Date(fechaCreacion)
+    fechaExpiracion.setFullYear(fechaExpiracion.getFullYear() + 5)
+    return fechaExpiracion
   }
 
   if (!titular) {
@@ -114,23 +139,60 @@ export default function DatosTitularPage() {
               </div>
 
               {titular.licencias && titular.licencias.length > 0 ? (
-                <div className="space-y-3">
-                  {titular.licencias.map((licencia) => (
-                    <Card key={licencia.id} className="p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium">Tipo: {licencia.tipo}</p>
-                          <p className="text-sm text-gray-600 mt-1">{licencia.observaciones}</p>
-                          <p className="text-xs text-gray-400 mt-2">
-                            Creada: {format(licencia.fechaCreacion, "PPP", { locale: es })}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                  <div className="space-y-3">
+                    {titular.licencias.map((licencia) => {
+                      const fechaExpiracion = calcularFechaExpiracion(licencia.fechaCreacion)
+                      const estaVencida = fechaExpiracion < new Date()
+
+                      return (
+                          <Card key={licencia.id} className={`p-4 ${estaVencida ? "border-red-200 bg-red-50" : ""}`}>
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <p className="font-medium text-lg">Tipo: {licencia.tipo}</p>
+                                  {estaVencida && (
+                                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Vencida</span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-600 mb-2">{licencia.observaciones}</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-500">
+                                  <p>
+                                    <span className="font-medium">Emisión:</span>{" "}
+                                    {format(licencia.fechaCreacion, "dd/MM/yyyy", { locale: es })}
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">Vencimiento:</span>{" "}
+                                    {format(fechaExpiracion, "dd/MM/yyyy", { locale: es })}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="ml-4 flex gap-2">
+                                <Button
+                                    onClick={() => handleCopiarLicencia(licencia)}
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex items-center gap-1"
+                                >
+                                  <Copy className="h-3 w-3"/>
+                                  Copiar
+                                </Button>
+                                <Button
+                                    onClick={() => handleRenovarLicencia(licencia)}
+                                    size="sm"
+                                    variant={estaVencida ? "default" : "outline"}
+                                    className="flex items-center gap-1"
+                                >
+                                  <RefreshCw className="h-3 w-3"/>
+                                  Renovar
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                      )
+                    })}
+                  </div>
               ) : (
-                <p className="text-gray-500 italic">No tiene licencias registradas</p>
+                  <p className="text-gray-500 italic">No tiene licencias registradas</p>
               )}
             </div>
 

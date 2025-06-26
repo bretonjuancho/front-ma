@@ -18,7 +18,7 @@ export default function AdminInicioPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <Button
-                            onClick={() => router.push("/admin/crear-usuario")}
+                            onClick={() => router.push("/Admin/crear-usuario")}
                             className="w-full h-16 text-lg"
                             variant="default"
                         >
@@ -27,12 +27,12 @@ export default function AdminInicioPage() {
                         </Button>
 
                         <Button
-                            onClick={() => router.push("/admin/consultar-titular")}
+                            onClick={() => router.push("/Admin/lista-usuarios")}
                             className="w-full h-16 text-lg"
                             variant="outline"
                         >
                             <SearchIcon className="mr-2 h-5 w-5" />
-                            Consultar Titular
+                            Listar usuarios
                         </Button>
                     </CardContent>
                 </Card>
