@@ -16,9 +16,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export default function ListadoLicencias() {
     const [licencias, setLicencias] = useState<LicenciaConTitular[]>([])
     const [filtro, setFiltro] = useState({
-        nombreApellido: "",
+        nombre: "",
+        apellido: "",
         numeroLicencia: "",
-        clase: "", // Nuevo filtro por clase
+        clase: "",
         vigencia: "todas",
         grupo: "",
         rh: "",
@@ -95,12 +96,15 @@ export default function ListadoLicencias() {
     const filtrar = () => {
         const hoy = new Date()
         return licencias.filter((l) => {
-            const nombreCompleto = `${l.titular.nombre} ${l.titular.apellido}`.toLowerCase()
-            const filtroNombre = filtro.nombreApellido.trim().toLowerCase()
-            const cumpleNombre = nombreCompleto.includes(filtroNombre)
+            const nombre = l.titular.nombre.toLowerCase()
+            const apellido = l.titular.apellido.toLowerCase()
+            const filtroNombre = filtro.nombre.trim().toLowerCase()
+            const filtroApellido = filtro.apellido.trim().toLowerCase()
 
+            const cumpleNombre = filtroNombre ? nombre.includes(filtroNombre) : true
+            const cumpleApellido = filtroApellido ? apellido.includes(filtroApellido) : true
             const cumpleNumero = l.id.includes(filtro.numeroLicencia)
-            const cumpleClase = filtro.clase ? l.tipo === filtro.clase : true // Filtro por clase
+            const cumpleClase = filtro.clase ? l.tipo === filtro.clase : true
             const cumpleGrupo = filtro.grupo ? l.titular.grupoSanguineo === filtro.grupo : true
             const cumpleRH = filtro.rh ? l.titular.factorRH === filtro.rh : true
             const cumpleDonante = filtro.donante ? (filtro.donante === "si" ? l.titular.donanteOrganos : !l.titular.donanteOrganos) : true
@@ -117,7 +121,7 @@ export default function ListadoLicencias() {
                 (filtro.vigencia === "vigentes" && esVigente) ||
                 (filtro.vigencia === "no-vigentes" && !esVigente)
 
-            return cumpleNombre && cumpleNumero && cumpleClase && cumpleGrupo && cumpleRH &&
+            return cumpleNombre && cumpleApellido && cumpleNumero && cumpleClase && cumpleGrupo && cumpleRH &&
                 cumpleDonante && cumpleFechaEmision && cumpleFechaVencimiento && cumpleVigencia
         })
     }
@@ -158,7 +162,6 @@ export default function ListadoLicencias() {
                                     <SelectValue placeholder="Todas las clases" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {/* Opción para "Todas" con valor explícito */}
                                     <SelectItem value="all">Todas las clases</SelectItem>
                                     <SelectItem value="A">Clase A (Motocicletas)</SelectItem>
                                     <SelectItem value="B">Clase B (Automóviles)</SelectItem>
@@ -168,13 +171,24 @@ export default function ListadoLicencias() {
                         </div>
 
                         <div>
-                            <Label>Nombre y Apellido</Label>
+                            <Label>Nombre</Label>
                             <Input
-                                value={filtro.nombreApellido}
-                                onChange={(e) => setFiltro({ ...filtro, nombreApellido: e.target.value })}
+                                value={filtro.nombre}
+                                onChange={(e) => setFiltro({ ...filtro, nombre: e.target.value })}
                             />
                         </div>
 
+                        <div>
+                            <Label>Apellido</Label>
+                            <Input
+                                value={filtro.apellido}
+                                onChange={(e) => setFiltro({ ...filtro, apellido: e.target.value })}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Segundo renglón de filtros */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                             <Label>Número de Licencia</Label>
                             <Input
@@ -182,10 +196,7 @@ export default function ListadoLicencias() {
                                 onChange={(e) => setFiltro({ ...filtro, numeroLicencia: e.target.value })}
                             />
                         </div>
-                    </div>
 
-                    {/* Segundo renglón de filtros */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                             <Label>Grupo Sanguíneo</Label>
                             <Input
@@ -303,7 +314,8 @@ export default function ListadoLicencias() {
                         <table className="w-full text-sm text-left border-collapse">
                             <thead className="bg-gray-200">
                             <tr>
-                                <th className="p-2 border">Titular</th>
+                                <th className="p-2 border">Nombre</th>
+                                <th className="p-2 border">Apellido</th>
                                 <th className="p-2 border">N° Licencia</th>
                                 <th className="p-2 border">Clase</th>
                                 <th className="p-2 border">Observaciones</th>
@@ -318,7 +330,8 @@ export default function ListadoLicencias() {
                                 const esVigente = lic.fechaVencimiento >= hoy
                                 return (
                                     <tr key={lic.id} className="border-b hover:bg-gray-50">
-                                        <td className="p-2 border">{lic.titular.nombre} {lic.titular.apellido}</td>
+                                        <td className="p-2 border">{lic.titular.nombre}</td>
+                                        <td className="p-2 border">{lic.titular.apellido}</td>
                                         <td className="p-2 border">{lic.id}</td>
                                         <td className="p-2 border">{lic.tipo}</td>
                                         <td className="p-2 border">{lic.observaciones}</td>

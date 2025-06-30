@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -12,16 +11,68 @@ import { Label } from "@/components/ui/label"
 import { ArrowLeft, Edit2, Check, X } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import type { Titular, Licencia } from "@/lib/types"
+
+
+interface Licencia {
+    id: string
+    tipo: string
+    observaciones: string
+    fechaCreacion: Date
+}
+
+interface Titular {
+    tipoDocumento: string
+    documento: string
+    nombre: string
+    apellido: string
+    fechaNacimiento: Date | undefined
+    direccion: string
+    grupoSanguineo: string
+    factorRH: string
+    donanteOrganos: boolean
+    licencias: Licencia[]
+}
+
+interface LicenciaConTitular {
+    id: string
+    tipo: string
+    observaciones: string
+    fechaEmision: Date
+    fechaVencimiento: Date
+    titular: Titular
+}
+
+interface LicenciaDTO {
+    class: string
+    numero: number
+    observations: string
+    fechaEmission: string
+    fechaVencimiento: string
+    titular: TitularDTO
+}
+
+interface TitularDTO {
+    nombre: string
+    apellido: string
+    documento: string
+    tipoDocumento: string
+    fechaNacimiento: string
+    direccion: string
+    grupoSanguineo: string
+    factorRH: string
+    donante: boolean
+}
 
 export default function RenovarLicenciaPage() {
     const router = useRouter()
     const [titular, setTitular] = useState<Titular | null>(null)
-    const [licencia, setLicencia] = useState<Licencia | null>(null)
+    const [licencia, setLicencia] = useState<LicenciaConTitular | null>(null)
     const [observaciones, setObservaciones] = useState("")
     const [editandoObservaciones, setEditandoObservaciones] = useState(false)
     const [observacionesTemp, setObservacionesTemp] = useState("")
     const [motivoRenovacion, setMotivoRenovacion] = useState("")
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState("")
 
     useEffect(() => {
         const titularData = localStorage.getItem("titularParaRenovacion")
@@ -39,17 +90,15 @@ export default function RenovarLicenciaPage() {
                 ...lic,
                 fechaCreacion: new Date(lic.fechaCreacion),
             }))
-            parsedLicencia.fechaCreacion = new Date(parsedLicencia.fechaCreacion)
+            parsedLicencia.fechaEmision = new Date(parsedLicencia.fechaEmision)
+            parsedLicencia.fechaVencimiento = new Date(parsedLicencia.fechaVencimiento)
 
-            setTitular(parsedTitular)
+            setTitular(parsedLicencia.titular || parsedTitular)
             setLicencia(parsedLicencia)
             setObservaciones(parsedLicencia.observaciones)
 
             // Sugerir motivo automáticamente basado en el estado de la licencia
-            const fechaExpiracion = new Date(parsedLicencia.fechaCreacion)
-            fechaExpiracion.setFullYear(fechaExpiracion.getFullYear() + 5)
-
-            if (fechaExpiracion < new Date()) {
+            if (parsedLicencia.fechaVencimiento < new Date()) {
                 setMotivoRenovacion("Expiración")
             }
         } else {
@@ -57,39 +106,114 @@ export default function RenovarLicenciaPage() {
         }
     }, [router])
 
-    const handleRenovar = (e: React.FormEvent) => {
+    const calcularFechaExpiracion = (fechaCreacion: Date) => {
+        const fechaExpiracion = new Date(fechaCreacion)
+        fechaExpiracion.setFullYear(fechaExpiracion.getFullYear() + 5)
+        return fechaExpiracion
+    }
+
+    const transformToTitularDTO = (titular: Titular): TitularDTO => {
+        return {
+            nombre: titular.nombre,
+            apellido: titular.apellido,
+            documento: titular.documento,
+            tipoDocumento: titular.tipoDocumento,
+            fechaNacimiento: titular.fechaNacimiento
+                ? format(titular.fechaNacimiento, "yyyy-MM-dd")
+                : "",
+            direccion: titular.direccion,
+            grupoSanguineo: titular.grupoSanguineo,
+            factorRH: titular.factorRH,
+            donante: titular.donanteOrganos
+        }
+    }
+
+    const transformToLicenciaDTO = (): LicenciaDTO => {
+        if (!titular || !licencia) {
+            throw new Error("Datos de titular o licencia no disponibles")
+        }
+
+        const licenciaNumero = parseInt(licencia.id.replace('LIC', ''))
+        if (isNaN(licenciaNumero)) {
+            throw new Error("Formato de número de licencia inválido")
+        }
+
+        const observacionesConMotivo = motivoRenovacion === "Otros"
+            ? observaciones
+            : `Motivo: ${motivoRenovacion}${observaciones ? ` - ${observaciones}` : ""}`
+
+        return {
+            class: licencia.tipo,
+            numero: licenciaNumero,
+            observations: observacionesConMotivo,
+            fechaEmission: format(new Date(), "yyyy-MM-dd"),
+            fechaVencimiento: format(calcularFechaExpiracion(new Date()), "yyyy-MM-dd"),
+            titular: transformToTitularDTO(titular)
+        }
+    }
+
+    const handleRenovar = async (e: React.FormEvent) => {
         e.preventDefault()
+        setLoading(true)
+        setError("")
 
         if (!titular || !licencia || !motivoRenovacion) {
-            alert("Por favor selecciona un motivo de renovación")
+            setError("Por favor selecciona un motivo de renovación")
+            setLoading(false)
             return
         }
 
+        try {
+            const licenciaDTO = transformToLicenciaDTO()
 
-        // Crear nueva licencia renovada con el motivo incluido en las observaciones
-        const observacionesConMotivo =
-            motivoRenovacion === "Otros"
-                ? observaciones
-                : `Motivo: ${motivoRenovacion}${observaciones ? ` - ${observaciones}` : ""}`
+            const response = await fetch("http://localhost:8081/Licencia/renovar", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem('accessToken')}`
+                },
+                body: JSON.stringify(licenciaDTO)
+            })
 
-        const licenciaRenovada: Licencia = {
-            id: Date.now().toString(),
-            tipo: licencia.tipo,
-            observaciones: observacionesConMotivo,
-            fechaCreacion: new Date(), // Nueva fecha de emisión
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.message || "Error al renovar la licencia")
+            }
+
+            const data = await response.json()
+
+            // Actualizar el estado local con la licencia renovada
+            const licenciaRenovada = {
+                ...licencia,
+                tipo: data.class,
+                observaciones: data.observations,
+                fechaEmision: new Date(data.fechaEmission),
+                fechaVencimiento: new Date(data.fechaVencimiento)
+            }
+
+            const titularActualizado = {
+                ...titular,
+                licencias: titular.licencias.map((lic) =>
+                    lic.id === licencia.id ? {
+                        ...lic,
+                        tipo: data.class,
+                        observaciones: data.observations,
+                        fechaCreacion: new Date(data.fechaEmission)
+                    } : lic
+                ),
+            }
+
+            // Guardar para el trámite completado
+            localStorage.setItem("titularCompletado", JSON.stringify(titularActualizado))
+            localStorage.setItem("nuevaLicencia", JSON.stringify(licenciaRenovada))
+
+            router.push("/Usuario/tramite-completado")
+        } catch (err) {
+            console.error("Error al renovar licencia:", err)
+            setError(err instanceof Error ? err.message : "Ocurrió un error al renovar la licencia")
+        } finally {
+            setLoading(false)
         }
-
-        // Actualizar el titular con la nueva licencia
-        const titularActualizado = {
-            ...titular,
-            licencias: titular.licencias.map((lic) => (lic.id === licencia.id ? licenciaRenovada : lic)),
-        }
-
-        // Guardar para el trámite completado
-        localStorage.setItem("titularCompletado", JSON.stringify(titularActualizado))
-        localStorage.setItem("nuevaLicencia", JSON.stringify(licenciaRenovada))
-
-        router.push("/Usuario/tramite-completado")
     }
 
     const handleCancelar = () => {
@@ -107,18 +231,9 @@ export default function RenovarLicenciaPage() {
     }
 
     const handleCancelarEdicion = () => {
-        setObservacionesTemp(observaciones)
         setEditandoObservaciones(false)
     }
 
-    // Función para calcular fecha de expiración
-    const calcularFechaExpiracion = (fechaCreacion: Date) => {
-        const fechaExpiracion = new Date(fechaCreacion)
-        fechaExpiracion.setFullYear(fechaExpiracion.getFullYear() + 5)
-        return fechaExpiracion
-    }
-
-    // Función para obtener la descripción del motivo
     const obtenerDescripcionMotivo = (motivo: string) => {
         const descripciones = {
             Expiración: "La licencia ha vencido o está próxima a vencer",
@@ -130,10 +245,10 @@ export default function RenovarLicenciaPage() {
     }
 
     if (!titular || !licencia) {
-        return <div>Cargando...</div>
+        return <div className="min-h-screen flex items-center justify-center">Cargando...</div>
     }
 
-    const fechaExpiracion = calcularFechaExpiracion(licencia.fechaCreacion)
+    const fechaExpiracion = licencia.fechaVencimiento
     const nuevaFechaExpiracion = calcularFechaExpiracion(new Date())
 
     return (
@@ -152,6 +267,11 @@ export default function RenovarLicenciaPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
+                        {error && (
+                            <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md">
+                                {error}
+                            </div>
+                        )}
                         <form onSubmit={handleRenovar} className="space-y-6">
                             {/* Datos del Titular (Solo lectura) */}
                             <div className="bg-gray-50 p-4 rounded-lg">
@@ -177,19 +297,24 @@ export default function RenovarLicenciaPage() {
                                 <h3 className="font-medium text-lg">Motivo de Renovación</h3>
                                 <div className="space-y-2">
                                     <Label htmlFor="motivoRenovacion">Selecciona el motivo *</Label>
-                                    <Select value={motivoRenovacion} onValueChange={setMotivoRenovacion}>
+                                    <Select
+                                        value={motivoRenovacion}
+                                        onValueChange={setMotivoRenovacion}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Seleccionar motivo de renovación" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="Expiración">Expiración</SelectItem>
                                             <SelectItem value="Extravío">Extravío</SelectItem>
-                                            <SelectItem value="Cambios">Robo</SelectItem>
+                                            <SelectItem value="Cambios">Cambios</SelectItem>
                                             <SelectItem value="Otros">Otros</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     {motivoRenovacion && (
-                                        <p className="text-sm text-gray-600 mt-1">{obtenerDescripcionMotivo(motivoRenovacion)}</p>
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            {obtenerDescripcionMotivo(motivoRenovacion)}
+                                        </p>
                                     )}
                                 </div>
                             </div>
@@ -218,11 +343,12 @@ export default function RenovarLicenciaPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <Label className="text-sm font-medium text-gray-500">Fecha de Emisión Actual</Label>
-                                        <p className="text-base">{format(licencia.fechaCreacion, "PPP", { locale: es })}</p>
+                                        <p className="text-base">{format(licencia.fechaEmision, "PPP", { locale: es })}</p>
                                     </div>
                                     <div>
-                                        <Label className="text-sm font-medium text-gray-500">Fecha de Expiración Actual</Label>
-                                        <p className="text-base">{format(fechaExpiracion, "PPP", { locale: es })}</p>
+                                        <Label className="text-sm font-medium text-gray-500">Fecha de Expiración
+                                            Actual</Label>
+                                        <p className="text-base">{fechaExpiracion ? format(new Date(fechaExpiracion), "PPP", {locale: es}) : "Fecha no disponible"}</p>
                                     </div>
                                 </div>
 
@@ -258,8 +384,12 @@ export default function RenovarLicenciaPage() {
                                                 className="flex-1"
                                                 autoFocus
                                             />
-                                            <Button type="button" size="sm" onClick={handleGuardarObservaciones}
-                                                    className="px-3">
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                onClick={handleGuardarObservaciones}
+                                                className="px-3"
+                                            >
                                                 <Check className="h-4 w-4"/>
                                             </Button>
                                             <Button
@@ -285,18 +415,27 @@ export default function RenovarLicenciaPage() {
                                         </div>
                                     )}
                                     <p className="text-xs text-gray-500 mt-1">
-                                        Nota: El motivo de renovación se incluirá automáticamente en el registro de la
-                                        licencia.
+                                        Nota: El motivo de renovación se incluirá automáticamente en el registro de la licencia.
                                     </p>
                                 </div>
                             </div>
 
                             <div className="flex gap-4">
-                                <Button type="button" variant="outline" onClick={handleCancelar} className="flex-1">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleCancelar}
+                                    className="flex-1"
+                                    disabled={loading}
+                                >
                                     Cancelar
                                 </Button>
-                                <Button type="submit" className="flex-1" disabled={!motivoRenovacion}>
-                                    Confirmar Renovación
+                                <Button
+                                    type="submit"
+                                    className="flex-1"
+                                    disabled={!motivoRenovacion || loading}
+                                >
+                                    {loading ? "Procesando..." : "Confirmar Renovación"}
                                 </Button>
                             </div>
                         </form>

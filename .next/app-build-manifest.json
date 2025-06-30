@@ -16,10 +16,55 @@
       "static/chunks/main-app.js",
       "static/chunks/app/Usuario/page.js"
     ],
+    "/Usuario/renovar-licencia/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/Usuario/renovar-licencia/page.js"
+    ],
+    "/Usuario/tramite-completado/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/Usuario/tramite-completado/page.js"
+    ],
     "/Login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/Login/page.js"
+    ],
+    "/Usuario/licencias/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/Usuario/licencias/page.js"
+    ],
+    "/Usuario/resultados-busqueda/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/Usuario/resultados-busqueda/page.js"
+    ],
+    "/Admin/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/Admin/page.js"
+    ],
+    "/Admin/crear-usuario/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/Admin/crear-usuario/page.js"
+    ],
+    "/Usuario/datos-titular/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/Usuario/datos-titular/page.js"
+    ],
+    "/Admin/lista-usuarios/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/Admin/lista-usuarios/page.js"
+    ],
+    "/Admin/modificar-usuario/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/Admin/modificar-usuario/page.js"
     ],
     "/Usuario/buscar-titular/loading": [
       "static/chunks/webpack.js",
@@ -31,65 +76,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/Usuario/buscar-titular/page.js"
     ],
-    "/Usuario/resultados-busqueda/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/Usuario/resultados-busqueda/page.js"
-    ],
-    "/Usuario/datos-titular/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/Usuario/datos-titular/page.js"
-    ],
-    "/Usuario/renovar-licencia/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/Usuario/renovar-licencia/page.js"
-    ],
-    "/Usuario/tramite-completado/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/Usuario/tramite-completado/page.js"
-    ],
     "/Usuario/modificar-titular/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/Usuario/modificar-titular/page.js"
     ],
-    "/Admin/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/Admin/page.js"
-    ],
     "/Usuario/copiar-licencia/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/Usuario/copiar-licencia/page.js"
-    ],
-    "/Usuario/licencias/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/Usuario/licencias/page.js"
-    ],
-    "/Admin/modificar-usuario/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/Admin/modificar-usuario/page.js"
-    ],
-    "/Admin/crear-usuario/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/Admin/crear-usuario/page.js"
-    ],
-    "/Admin/lista-usuarios/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/Admin/lista-usuarios/page.js"
-    ],
-    "/Usuario/crear-titular/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/Usuario/crear-titular/page.js"
     ]
   }
 }

@@ -21,7 +21,11 @@ type UsuarioAdministrativo = {
 export default function ListadoUsuariosAdminPage() {
     const router = useRouter()
     const [usuarios, setUsuarios] = useState<UsuarioAdministrativo[]>([])
-    const [filtroNombre, setFiltroNombre] = useState("")
+    const [filtros, setFiltros] = useState({
+        nombre: "",
+        apellido: "",
+        dni: ""
+    })
     const [loading, setLoading] = useState(true)
 
     // Cargar datos de usuarios (simulación)
@@ -78,14 +82,25 @@ export default function ListadoUsuariosAdminPage() {
         fetchUsuarios()
     }, [])
 
-    // Filtrar usuarios por nombre/apellido
+    // Filtrar usuarios por nombre, apellido y DNI por separado
     const usuariosFiltrados = usuarios.filter(usuario => {
-        const nombreCompleto = `${usuario.nombre} ${usuario.apellido}`.toLowerCase()
-        return nombreCompleto.includes(filtroNombre.toLowerCase())
+        const cumpleNombre = filtros.nombre
+            ? usuario.nombre.toLowerCase().includes(filtros.nombre.toLowerCase())
+            : true
+
+        const cumpleApellido = filtros.apellido
+            ? usuario.apellido.toLowerCase().includes(filtros.apellido.toLowerCase())
+            : true
+
+        const cumpleDNI = filtros.dni
+            ? usuario.dni.includes(filtros.dni)
+            : true
+
+        return cumpleNombre && cumpleApellido && cumpleDNI
     })
 
     const handleEditar = (id: string) => {
-        router.push(`/Admin/usuarios/editar/${id}`)
+        router.push(`/Admin/modificar-usuario`)
     }
 
     const handleEliminar = async (id: string) => {
@@ -101,6 +116,11 @@ export default function ListadoUsuariosAdminPage() {
 
     const handleNuevoUsuario = () => {
         router.push("/Admin/usuarios/nuevo")
+    }
+
+    const handleFiltroChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target
+        setFiltros(prev => ({ ...prev, [id]: value }))
     }
 
     return (
@@ -120,17 +140,45 @@ export default function ListadoUsuariosAdminPage() {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {/* Filtro */}
-                    <div className="relative max-w-xs">
-                        <Label htmlFor="buscar">Buscar por nombre</Label>
-                        <div className="relative">
-                            <Input
-                                id="buscar"
-                                value={filtroNombre}
-                                onChange={(e) => setFiltroNombre(e.target.value)}
-                                placeholder="Ej: Ana García"
-                            />
-                            <Search className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                    {/* Filtros */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="nombre">Nombre</Label>
+                            <div className="relative">
+                                <Input
+                                    id="nombre"
+                                    value={filtros.nombre}
+                                    onChange={handleFiltroChange}
+                                    placeholder="Ej: Ana"
+                                />
+                                <Search className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="apellido">Apellido</Label>
+                            <div className="relative">
+                                <Input
+                                    id="apellido"
+                                    value={filtros.apellido}
+                                    onChange={handleFiltroChange}
+                                    placeholder="Ej: García"
+                                />
+                                <Search className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="dni">DNI</Label>
+                            <div className="relative">
+                                <Input
+                                    id="dni"
+                                    value={filtros.dni}
+                                    onChange={handleFiltroChange}
+                                    placeholder="Ej: 12345678"
+                                />
+                                <Search className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                            </div>
                         </div>
                     </div>
 
@@ -149,6 +197,7 @@ export default function ListadoUsuariosAdminPage() {
                                 <TableHeader className="bg-gray-100">
                                     <TableRow>
                                         <TableHead>Nombre</TableHead>
+                                        <TableHead>Apellido</TableHead>
                                         <TableHead>DNI</TableHead>
                                         <TableHead>Email</TableHead>
                                         <TableHead>Rol</TableHead>
@@ -159,18 +208,21 @@ export default function ListadoUsuariosAdminPage() {
                                     {usuariosFiltrados.map((usuario) => (
                                         <TableRow key={usuario.id}>
                                             <TableCell className="font-medium">
-                                                {usuario.nombre} {usuario.apellido}
+                                                {usuario.nombre}
+                                            </TableCell>
+                                            <TableCell className="font-medium">
+                                                {usuario.apellido}
                                             </TableCell>
                                             <TableCell>{usuario.dni}</TableCell>
                                             <TableCell>{usuario.email}</TableCell>
                                             <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                            usuario.rol === "administrador"
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-green-100 text-green-800"
-                        }`}>
-                          {usuario.rol === "administrador" ? "Administrador" : "Administrativo"}
-                        </span>
+                                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                                    usuario.rol === "administrador"
+                                                        ? "bg-blue-100 text-blue-800"
+                                                        : "bg-green-100 text-green-800"
+                                                }`}>
+                                                    {usuario.rol === "administrador" ? "Administrador" : "Administrativo"}
+                                                </span>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">

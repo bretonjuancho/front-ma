@@ -44,7 +44,6 @@ export function LicenciaPreview({ titular, licencia }: LicenciaPreviewProps) {
         format: [86, 54], // Tamaño estándar de tarjeta ID
       })
 
-      // Añadir la imagen al PDF
       pdf.addImage(imgData, "PNG", 0, 0, 86, 54)
 
       // Descargar el PDF

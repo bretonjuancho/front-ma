@@ -9,6 +9,14 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react"
 
+interface UsuarioDTO {
+    dni: string
+    nombre: string
+    apellido: string
+    email: string
+    password: string
+}
+
 export default function CrearUsuarioAdminPage() {
     const router = useRouter()
     const [formData, setFormData] = useState({
@@ -66,20 +74,34 @@ export default function CrearUsuarioAdminPage() {
         }
 
         try {
-            // Simular petición API
-            console.log("Datos a enviar:", {
+            // Preparar datos para enviar al backend
+            const usuarioDTO: UsuarioDTO = {
+                dni: formData.dni,
                 nombre: formData.nombre,
                 apellido: formData.apellido,
-                dni: formData.dni,
                 email: formData.email,
-                password: formData.password,
-                rol: "administrativo" // Rol por defecto
+                password: formData.password
+            }
+
+            // Llamar al endpoint del backend
+            const response = await fetch('http://localhost:8081/usuario/crear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(usuarioDTO),
+                credentials: 'include' // Para incluir cookies si es necesario
             })
 
-            // Simular retardo de red
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.message || 'Error al crear el usuario')
+            }
+
+            const data = await response.json()
 
             setSuccess("Usuario creado correctamente")
+
             // Limpiar formulario
             setFormData({
                 nombre: "",
@@ -89,11 +111,12 @@ export default function CrearUsuarioAdminPage() {
                 password: "",
                 confirmPassword: ""
             })
+
             // Redirigir después de 2 segundos
             setTimeout(() => router.push("/Admin/usuarios"), 2000)
         } catch (err) {
             console.error("Error al crear usuario:", err)
-            setError("Ocurrió un error al crear el usuario")
+            setError(err instanceof Error ? err.message : "Ocurrió un error al crear el usuario")
         } finally {
             setLoading(false)
         }

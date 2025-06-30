@@ -1,6 +1,5 @@
 "use client"
 
-import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -16,9 +15,23 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import type { Titular } from "@/lib/types"
 
+interface TitularDTO {
+  tipoDocumento: string
+  documento: string
+  nombre: string
+  apellido: string
+  fechaNacimiento: string
+  direccion: string
+  grupoSanguineo: string
+  factorRH: string
+  donanteOrganos: boolean
+}
+
 export default function ModificarTitularPage() {
   const router = useRouter()
   const [titular, setTitular] = useState<Titular | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const titularData = localStorage.getItem("titularParaModificar")
@@ -38,16 +51,61 @@ export default function ModificarTitularPage() {
     }
   }, [router])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!titular) return
 
-    // Aquí iría la lógica para actualizar el titular en la base de datos
-    alert("Titular modificado exitosamente")
+    setLoading(true)
+    setError(null)
 
-    // Actualizar el titular en localStorage para que se vea reflejado
-    localStorage.setItem("titularEncontrado", JSON.stringify(titular))
-    router.push("/Usuario/datos-titular")
+    try {
+      // Preparar los datos para enviar al backend
+      const titularDTO: TitularDTO = {
+        tipoDocumento: titular.tipoDocumento,
+        documento: titular.documento,
+        nombre: titular.nombre,
+        apellido: titular.apellido,
+        fechaNacimiento: titular.fechaNacimiento?.toISOString().split('T')[0] || '',
+        direccion: titular.direccion,
+        grupoSanguineo: titular.grupoSanguineo,
+        factorRH: titular.factorRH,
+        donanteOrganos: titular.donanteOrganos
+      }
+
+      // Llamar al endpoint del backend
+      const response = await fetch('http://localhost:8081/titular/modificar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(titularDTO)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Error al modificar el titular')
+      }
+
+      const data = await response.json()
+
+      // Actualizar el titular en localStorage
+      localStorage.setItem("titularEncontrado", JSON.stringify({
+        ...titular,
+        nombre: data.nombre,
+        apellido: data.apellido,
+        direccion: data.direccion,
+        donanteOrganos: data.donanteOrganos
+      }))
+
+      // Mostrar mensaje de éxito y redirigir
+      alert("Titular modificado exitosamente")
+      router.push("/Usuario/datos-titular")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ocurrió un error desconocido')
+      console.error("Error al modificar titular:", err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleCancelar = () => {
@@ -55,7 +113,7 @@ export default function ModificarTitularPage() {
   }
 
   if (!titular) {
-    return <div>Cargando...</div>
+    return <div className="min-h-screen flex items-center justify-center">Cargando...</div>
   }
 
   return (
@@ -76,6 +134,11 @@ export default function ModificarTitularPage() {
               </div>
             </CardHeader>
             <CardContent>
+              {error && (
+                  <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md">
+                    {error}
+                  </div>
+              )}
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Tipo de Documento (solo lectura) */}
@@ -183,8 +246,8 @@ export default function ModificarTitularPage() {
                   <Button type="button" variant="outline" onClick={handleCancelar} className="flex-1">
                     Cancelar
                   </Button>
-                  <Button type="submit" className="flex-1">
-                    Guardar Cambios
+                  <Button type="submit" className="flex-1" disabled={loading}>
+                    {loading ? "Guardando..." : "Guardar Cambios"}
                   </Button>
                 </div>
               </form>
