@@ -1,244 +1,320 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Pencil, Search } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
-import { LicenciaConTitular } from "@/lib/types"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { CalendarIcon } from "lucide-react"
 
-export default function ListadoLicencias() {
-    const [licencias, setLicencias] = useState<LicenciaConTitular[]>([])
-    const [filtro, setFiltro] = useState({
+interface Licencia {
+    id: string
+    numeroLicencia: string
+    clase: string
+    fechaEmision: string
+    fechaVencimiento: string
+    vigente: boolean
+    titular: {
+        nombre: string
+        apellido: string
+        grupoSanguineo: string
+        factorRH: string
+        donanteOrganos: boolean
+    }
+}
+
+interface LicenciaConsultaDTO {
+    fechaEmisionDesde?: string
+    fechaEmisionHasta?: string
+    fechaVencimientoDesde?: string
+    fechaVencimientoHasta?: string
+    vigente?: boolean
+    clase?: string
+    nombre?: string
+    apellido?: string
+    numeroLicencia?: string
+    grupoSanguineo?: string
+    factorRH?: string
+    donante?: boolean
+}
+
+export default function ListadoLicenciasPage() {
+    const router = useRouter()
+    const [licencias, setLicencias] = useState<Licencia[]>([])
+    const [filtros, setFiltros] = useState<LicenciaConsultaDTO>({
         nombre: "",
         apellido: "",
         numeroLicencia: "",
         clase: "",
-        vigencia: "todas",
-        grupo: "",
-        rh: "",
-        donante: "",
-        fechaEmisionDesde: undefined as Date | undefined,
-        fechaEmisionHasta: undefined as Date | undefined,
-        fechaVencimientoDesde: undefined as Date | undefined,
-        fechaVencimientoHasta: undefined as Date | undefined,
+        vigente: true,
+        grupoSanguineo: "",
+        factorRH: "",
+        donante: undefined
     })
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState("")
+
+    const buscarLicencias = async () => {
+        const token = localStorage.getItem('accessToken');
+
+        if (!token) {
+            throw new Error("No estás autenticado. Por favor inicia sesión nuevamente.");
+        }
+
+        try {
+            setLoading(true)
+            setError("")
+
+            // Construir los parámetros de la URL
+            const params = new URLSearchParams();
+
+            // Agregar solo los parámetros que tienen valor
+            if (filtros.nombre) params.append('nombre', filtros.nombre);
+            if (filtros.apellido) params.append('apellido', filtros.apellido);
+            if (filtros.numeroLicencia) params.append('numeroLicencia', filtros.numeroLicencia);
+            if (filtros.clase) params.append('clase', filtros.clase);
+            if (filtros.vigente !== undefined) params.append('vigente', filtros.vigente.toString());
+            if (filtros.grupoSanguineo) params.append('grupoSanguineo', filtros.grupoSanguineo);
+            if (filtros.factorRH) params.append('factorRH', filtros.factorRH);
+            if (filtros.donante !== undefined) params.append('donante', filtros.donante.toString());
+            if (filtros.fechaEmisionDesde) params.append('fechaEmisionDesde', filtros.fechaEmisionDesde);
+            if (filtros.fechaEmisionHasta) params.append('fechaEmisionHasta', filtros.fechaEmisionHasta);
+            if (filtros.fechaVencimientoDesde) params.append('fechaVencimientoDesde', filtros.fechaVencimientoDesde);
+            if (filtros.fechaVencimientoHasta) params.append('fechaVencimientoHasta', filtros.fechaVencimientoHasta);
+
+            const url = `http://localhost:8081/licencia/vigentes?${params.toString()}`;
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}`
+                },
+                credentials: 'include'
+            })
+
+            if (!response.ok) {
+                throw new Error('Error al obtener las licencias')
+            }
+
+            const data = await response.json()
+            setLicencias(data)
+        } catch (err) {
+            console.error("Error al buscar licencias:", err)
+            setError(err instanceof Error ? err.message : "Error desconocido")
+        } finally {
+            setLoading(false)
+        }
+    }
 
     useEffect(() => {
-        const dummyLicencias: LicenciaConTitular[] = [
-            {
-                id: "LIC001",
-                tipo: "B",
-                observaciones: "Automóvil particular",
-                fechaEmision: new Date("2023-01-14"),
-                fechaVencimiento: new Date("2027-01-14"),
-                titular: {
-                    nombre: "Juan",
-                    apellido: "Pérez",
-                    documento: "12345678",
-                    tipoDocumento: "DNI",
-                    fechaNacimiento: new Date("1990-05-15"),
-                    direccion: "Av. Corrientes 1234",
-                    grupoSanguineo: "A",
-                    factorRH: "+",
-                    donanteOrganos: true,
-                    licencias: []
-                }
-            },
-            {
-                id: "LIC002",
-                tipo: "A",
-                observaciones: "Motocicleta",
-                fechaEmision: new Date("2022-06-09"),
-                fechaVencimiento: new Date("2024-06-09"),
-                titular: {
-                    nombre: "María",
-                    apellido: "Gómez",
-                    documento: "23456789",
-                    tipoDocumento: "DNI",
-                    fechaNacimiento: new Date("1995-08-22"),
-                    direccion: "Calle Falsa 123",
-                    grupoSanguineo: "O",
-                    factorRH: "-",
-                    donanteOrganos: false,
-                    licencias: []
-                }
-            },
-            {
-                id: "LIC003",
-                tipo: "C",
-                observaciones: "Camión pesado",
-                fechaEmision: new Date("2024-01-31"),
-                fechaVencimiento: new Date("2026-01-31"),
-                titular: {
-                    nombre: "Lucía",
-                    apellido: "Martínez",
-                    documento: "34567890",
-                    tipoDocumento: "DNI",
-                    fechaNacimiento: new Date("1988-02-14"),
-                    direccion: "Av. San Martín 456",
-                    grupoSanguineo: "B",
-                    factorRH: "+",
-                    donanteOrganos: true,
-                    licencias: []
-                }
-            },
-        ]
-        setLicencias(dummyLicencias)
+        buscarLicencias()
     }, [])
 
-    const filtrar = () => {
-        const hoy = new Date()
-        return licencias.filter((l) => {
-            const nombre = l.titular.nombre.toLowerCase()
-            const apellido = l.titular.apellido.toLowerCase()
-            const filtroNombre = filtro.nombre.trim().toLowerCase()
-            const filtroApellido = filtro.apellido.trim().toLowerCase()
+    const handleFiltroChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target
+        setFiltros(prev => ({ ...prev, [id]: value }))
+    }
 
-            const cumpleNombre = filtroNombre ? nombre.includes(filtroNombre) : true
-            const cumpleApellido = filtroApellido ? apellido.includes(filtroApellido) : true
-            const cumpleNumero = l.id.includes(filtro.numeroLicencia)
-            const cumpleClase = filtro.clase ? l.tipo === filtro.clase : true
-            const cumpleGrupo = filtro.grupo ? l.titular.grupoSanguineo === filtro.grupo : true
-            const cumpleRH = filtro.rh ? l.titular.factorRH === filtro.rh : true
-            const cumpleDonante = filtro.donante ? (filtro.donante === "si" ? l.titular.donanteOrganos : !l.titular.donanteOrganos) : true
+    const handleClaseChange = (value: string) => {
+        setFiltros(prev => ({ ...prev, clase: value === "todas" ? undefined : value }))
+    }
 
-            const cumpleFechaEmision = (!filtro.fechaEmisionDesde || l.fechaEmision >= filtro.fechaEmisionDesde)
-                && (!filtro.fechaEmisionHasta || l.fechaEmision <= filtro.fechaEmisionHasta)
+    const handleVigenciaChange = (value: string) => {
+        setFiltros(prev => ({ ...prev, vigente: value === "vigentes" }))
+    }
 
-            const cumpleFechaVencimiento = (!filtro.fechaVencimientoDesde || l.fechaVencimiento >= filtro.fechaVencimientoDesde)
-                && (!filtro.fechaVencimientoHasta || l.fechaVencimiento <= filtro.fechaVencimientoHasta)
+    const handleDonanteChange = (value: string) => {
+        setFiltros(prev => ({
+            ...prev,
+            donante: value === "todas" ? undefined : value === "si"
+        }))
+    }
 
-            const esVigente = l.fechaVencimiento >= hoy
-            const cumpleVigencia =
-                filtro.vigencia === "todas" ||
-                (filtro.vigencia === "vigentes" && esVigente) ||
-                (filtro.vigencia === "no-vigentes" && !esVigente)
-
-            return cumpleNombre && cumpleApellido && cumpleNumero && cumpleClase && cumpleGrupo && cumpleRH &&
-                cumpleDonante && cumpleFechaEmision && cumpleFechaVencimiento && cumpleVigencia
+    const handleLimpiarFiltros = () => {
+        setFiltros({
+            nombre: "",
+            apellido: "",
+            numeroLicencia: "",
+            clase: "",
+            vigente: true,
+            grupoSanguineo: "",
+            factorRH: "",
+            donante: undefined,
+            fechaEmisionDesde: undefined,
+            fechaEmisionHasta: undefined,
+            fechaVencimientoDesde: undefined,
+            fechaVencimientoHasta: undefined
         })
+    }
+
+    const handleEditar = (id: string) => {
+        router.push(`/licencia/modificar/${id}`)
     }
 
     return (
         <div className="p-4">
             <Card>
                 <CardHeader>
-                    <CardTitle>Listado de Licencias</CardTitle>
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <CardTitle>Listado de Licencias</CardTitle>
+                            <p className="text-sm text-gray-500 mt-1">
+                                {licencias.length} {licencias.length === 1 ? "licencia" : "licencias"} encontradas
+                            </p>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={handleLimpiarFiltros}
+                                disabled={loading}
+                            >
+                                Limpiar
+                            </Button>
+                            <Button
+                                onClick={buscarLicencias}
+                                disabled={loading}
+                            >
+                                {loading ? "Buscando..." : "Buscar"}
+                            </Button>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {/* Primer renglón de filtros */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div>
-                            <Label>Estado de Vigencia</Label>
-                            <Select
-                                value={filtro.vigencia}
-                                onValueChange={(value) => setFiltro({...filtro, vigencia: value})}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccionar estado" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="todas">Todas las licencias</SelectItem>
-                                    <SelectItem value="vigentes">Solo vigentes</SelectItem>
-                                    <SelectItem value="no-vigentes">No vigentes</SelectItem>
-                                </SelectContent>
-                            </Select>
+                    {/* Filtros Básicos */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="nombre">Nombre</Label>
+                            <Input
+                                id="nombre"
+                                value={filtros.nombre || ""}
+                                onChange={handleFiltroChange}
+                                placeholder="Ej: Juan"
+                            />
                         </div>
 
-                        <div>
-                            <Label>Clase de Licencia</Label>
+                        <div className="space-y-2">
+                            <Label htmlFor="apellido">Apellido</Label>
+                            <Input
+                                id="apellido"
+                                value={filtros.apellido || ""}
+                                onChange={handleFiltroChange}
+                                placeholder="Ej: Pérez"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="numeroLicencia">N° Licencia</Label>
+                            <Input
+                                id="numeroLicencia"
+                                value={filtros.numeroLicencia || ""}
+                                onChange={handleFiltroChange}
+                                placeholder="Ej: 123456"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Clase</Label>
                             <Select
-                                value={filtro.clase}
-                                onValueChange={(value) => setFiltro({...filtro, clase: value})}
+                                value={filtros.clase || "todas"}
+                                onValueChange={handleClaseChange}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Todas las clases" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Todas las clases</SelectItem>
-                                    <SelectItem value="A">Clase A (Motocicletas)</SelectItem>
-                                    <SelectItem value="B">Clase B (Automóviles)</SelectItem>
-                                    <SelectItem value="C">Clase C (Camiones)</SelectItem>
+                                    <SelectItem value="todas">Todas</SelectItem>
+                                    <SelectItem value="A">Clase A</SelectItem>
+                                    <SelectItem value="B">Clase B</SelectItem>
+                                    <SelectItem value="C">Clase C</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    {/* Filtros Avanzados */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                            <Label>Estado</Label>
+                            <Select
+                                value={filtros.vigente ? "vigentes" : "todas"}
+                                onValueChange={handleVigenciaChange}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Seleccionar estado" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="vigentes">Vigentes</SelectItem>
+                                    <SelectItem value="todas">Todas</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        <div>
-                            <Label>Nombre</Label>
+                        <div className="space-y-2">
+                            <Label htmlFor="grupoSanguineo">Grupo Sanguíneo</Label>
                             <Input
-                                value={filtro.nombre}
-                                onChange={(e) => setFiltro({ ...filtro, nombre: e.target.value })}
+                                id="grupoSanguineo"
+                                value={filtros.grupoSanguineo || ""}
+                                onChange={handleFiltroChange}
+                                placeholder="Ej: A, B, O"
                             />
                         </div>
 
-                        <div>
-                            <Label>Apellido</Label>
+                        <div className="space-y-2">
+                            <Label htmlFor="factorRH">Factor RH</Label>
                             <Input
-                                value={filtro.apellido}
-                                onChange={(e) => setFiltro({ ...filtro, apellido: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Segundo renglón de filtros */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div>
-                            <Label>Número de Licencia</Label>
-                            <Input
-                                value={filtro.numeroLicencia}
-                                onChange={(e) => setFiltro({ ...filtro, numeroLicencia: e.target.value })}
+                                id="factorRH"
+                                value={filtros.factorRH || ""}
+                                onChange={handleFiltroChange}
+                                placeholder="Ej: +, -"
                             />
                         </div>
 
-                        <div>
-                            <Label>Grupo Sanguíneo</Label>
-                            <Input
-                                value={filtro.grupo}
-                                onChange={(e) => setFiltro({ ...filtro, grupo: e.target.value })}
-                            />
-                        </div>
-
-                        <div>
-                            <Label>Factor RH</Label>
-                            <Input
-                                value={filtro.rh}
-                                onChange={(e) => setFiltro({ ...filtro, rh: e.target.value })}
-                            />
-                        </div>
-
-                        <div>
-                            <Label>Donante de Órganos</Label>
-                            <Input
-                                value={filtro.donante}
-                                onChange={(e) => setFiltro({ ...filtro, donante: e.target.value })}
-                                placeholder="si / no"
-                            />
+                        <div className="space-y-2">
+                            <Label>Donante</Label>
+                            <Select
+                                value={filtros.donante === undefined ? "todas" : filtros.donante ? "si" : "no"}
+                                onValueChange={handleDonanteChange}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Seleccionar" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="todas">Todos</SelectItem>
+                                    <SelectItem value="si">Sí</SelectItem>
+                                    <SelectItem value="no">No</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 
-                    {/* Tercer renglón - Fechas de Emisión */}
+                    {/* Filtros por Fechas */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label>Fecha de Emisión Desde</Label>
+                            <Label>Fecha Emisión Desde</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                    <Button
+                                        variant={"outline"}
+                                        className="w-full justify-start text-left font-normal"
+                                    >
                                         <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {filtro.fechaEmisionDesde ? format(filtro.fechaEmisionDesde, "PPP", { locale: es }) : <span>Seleccionar</span>}
+                                        {filtros.fechaEmisionDesde ? format(new Date(filtros.fechaEmisionDesde), "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
                                     <Calendar
                                         mode="single"
-                                        selected={filtro.fechaEmisionDesde}
-                                        onSelect={(date) => setFiltro({...filtro, fechaEmisionDesde: date})}
+                                        selected={filtros.fechaEmisionDesde ? new Date(filtros.fechaEmisionDesde) : undefined}
+                                        onSelect={(date) => setFiltros(prev => ({ ...prev, fechaEmisionDesde: date?.toISOString().split('T')[0] }))}
                                         initialFocus
                                     />
                                 </PopoverContent>
@@ -246,19 +322,68 @@ export default function ListadoLicencias() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label>Fecha de Emisión Hasta</Label>
+                            <Label>Fecha Emisión Hasta</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                    <Button
+                                        variant={"outline"}
+                                        className="w-full justify-start text-left font-normal"
+                                    >
                                         <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {filtro.fechaEmisionHasta ? format(filtro.fechaEmisionHasta, "PPP", { locale: es }) : <span>Seleccionar</span>}
+                                        {filtros.fechaEmisionHasta ? format(new Date(filtros.fechaEmisionHasta), "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
                                     <Calendar
                                         mode="single"
-                                        selected={filtro.fechaEmisionHasta}
-                                        onSelect={(date) => setFiltro({...filtro, fechaEmisionHasta: date})}
+                                        selected={filtros.fechaEmisionHasta ? new Date(filtros.fechaEmisionHasta) : undefined}
+                                        onSelect={(date) => setFiltros(prev => ({ ...prev, fechaEmisionHasta: date?.toISOString().split('T')[0] }))}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Fecha Vencimiento Desde</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        className="w-full justify-start text-left font-normal"
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {filtros.fechaVencimientoDesde ? format(new Date(filtros.fechaVencimientoDesde), "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={filtros.fechaVencimientoDesde ? new Date(filtros.fechaVencimientoDesde) : undefined}
+                                        onSelect={(date) => setFiltros(prev => ({ ...prev, fechaVencimientoDesde: date?.toISOString().split('T')[0] }))}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Fecha Vencimiento Hasta</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        className="w-full justify-start text-left font-normal"
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {filtros.fechaVencimientoHasta ? format(new Date(filtros.fechaVencimientoHasta), "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={filtros.fechaVencimientoHasta ? new Date(filtros.fechaVencimientoHasta) : undefined}
+                                        onSelect={(date) => setFiltros(prev => ({ ...prev, fechaVencimientoHasta: date?.toISOString().split('T')[0] }))}
                                         initialFocus
                                     />
                                 </PopoverContent>
@@ -266,90 +391,82 @@ export default function ListadoLicencias() {
                         </div>
                     </div>
 
-                    {/* Cuarto renglón - Fechas de Vencimiento */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label>Fecha de Vencimiento Desde</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-start text-left font-normal">
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {filtro.fechaVencimientoDesde ? format(filtro.fechaVencimientoDesde, "PPP", { locale: es }) : <span>Seleccionar</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={filtro.fechaVencimientoDesde}
-                                        onSelect={(date) => setFiltro({...filtro, fechaVencimientoDesde: date})}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                    {/* Mensaje de error */}
+                    {error && (
+                        <div className="p-4 bg-red-100 text-red-700 rounded-md">
+                            {error}
                         </div>
+                    )}
 
-                        <div className="space-y-2">
-                            <Label>Fecha de Vencimiento Hasta</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-start text-left font-normal">
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {filtro.fechaVencimientoHasta ? format(filtro.fechaVencimientoHasta, "PPP", { locale: es }) : <span>Seleccionar</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={filtro.fechaVencimientoHasta}
-                                        onSelect={(date) => setFiltro({...filtro, fechaVencimientoHasta: date})}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                    {/* Tabla de licencias */}
+                    {loading ? (
+                        <div className="flex justify-center py-8">
+                            <p>Cargando licencias...</p>
                         </div>
-                    </div>
-
-                    {/* Tabla de resultados */}
-                    <div className="pt-6 overflow-auto">
-                        <table className="w-full text-sm text-left border-collapse">
-                            <thead className="bg-gray-200">
-                            <tr>
-                                <th className="p-2 border">Nombre</th>
-                                <th className="p-2 border">Apellido</th>
-                                <th className="p-2 border">N° Licencia</th>
-                                <th className="p-2 border">Clase</th>
-                                <th className="p-2 border">Observaciones</th>
-                                <th className="p-2 border">Emisión</th>
-                                <th className="p-2 border">Vencimiento</th>
-                                <th className="p-2 border">Estado</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {filtrar().map((lic) => {
-                                const hoy = new Date()
-                                const esVigente = lic.fechaVencimiento >= hoy
-                                return (
-                                    <tr key={lic.id} className="border-b hover:bg-gray-50">
-                                        <td className="p-2 border">{lic.titular.nombre}</td>
-                                        <td className="p-2 border">{lic.titular.apellido}</td>
-                                        <td className="p-2 border">{lic.id}</td>
-                                        <td className="p-2 border">{lic.tipo}</td>
-                                        <td className="p-2 border">{lic.observaciones}</td>
-                                        <td className="p-2 border">{format(lic.fechaEmision, "PPP", { locale: es })}</td>
-                                        <td className="p-2 border">{format(lic.fechaVencimiento, "PPP", { locale: es })}</td>
-                                        <td className="p-2 border">
+                    ) : licencias.length === 0 ? (
+                        <div className="flex justify-center py-8">
+                            <p>No se encontraron licencias</p>
+                        </div>
+                    ) : (
+                        <div className="border rounded-lg overflow-hidden">
+                            <Table>
+                                <TableHeader className="bg-gray-100">
+                                    <TableRow>
+                                        <TableHead>Titular</TableHead>
+                                        <TableHead>N° Licencia</TableHead>
+                                        <TableHead>Clase</TableHead>
+                                        <TableHead>Emisión</TableHead>
+                                        <TableHead>Vencimiento</TableHead>
+                                        <TableHead>Grupo Sanguíneo</TableHead>
+                                        <TableHead>Donante</TableHead>
+                                        <TableHead>Estado</TableHead>
+                                        <TableHead className="text-right">Acciones</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {licencias.map((licencia) => (
+                                        <TableRow key={licencia.id}>
+                                            <TableCell className="font-medium">
+                                                {licencia.titular.nombre} {licencia.titular.apellido}
+                                            </TableCell>
+                                            <TableCell>{licencia.numeroLicencia}</TableCell>
+                                            <TableCell>{licencia.clase}</TableCell>
+                                            <TableCell>
+                                                {format(new Date(licencia.fechaEmision), "dd/MM/yyyy", { locale: es })}
+                                            </TableCell>
+                                            <TableCell>
+                                                {format(new Date(licencia.fechaVencimiento), "dd/MM/yyyy", { locale: es })}
+                                            </TableCell>
+                                            <TableCell>
+                                                {licencia.titular.grupoSanguineo}{licencia.titular.factorRH}
+                                            </TableCell>
+                                            <TableCell>
+                                                {licencia.titular.donanteOrganos ? "Sí" : "No"}
+                                            </TableCell>
+                                            <TableCell>
                                                 <span className={`px-2 py-1 rounded-full text-xs ${
-                                                    esVigente ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                                    licencia.vigente ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                                                 }`}>
-                                                    {esVigente ? "Vigente" : "No vigente"}
+                                                    {licencia.vigente ? "Vigente" : "Vencida"}
                                                 </span>
-                                        </td>
-                                    </tr>
-                                )
-                            })}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleEditar(licencia.id)}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

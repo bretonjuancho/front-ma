@@ -57,8 +57,10 @@ export default function LoginPage() {
                 throw new Error("No se recibió token en la respuesta");
             }
 
+            console.log(data.rol)
+
             // Redirección basada en rol
-            if (data.rol === "administrador") {
+            if (data.rol === "admin") {
                 router.push("/Admin");
             } else if (data.rol === "administrativo") {
                 router.push("/Usuario");

@@ -1,9 +1,8 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/Admin/page": "app/Admin/page.js",
-  "/Usuario/licencias/page": "app/Usuario/licencias/page.js",
-  "/Admin/crear-usuario/page": "app/Admin/crear-usuario/page.js",
+  "/Usuario/buscar-titular/page": "app/Usuario/buscar-titular/page.js",
   "/Admin/lista-usuarios/page": "app/Admin/lista-usuarios/page.js",
   "/Usuario/page": "app/Usuario/page.js",
-  "/Usuario/buscar-titular/page": "app/Usuario/buscar-titular/page.js"
+  "/Usuario/crear-titular/page": "app/Usuario/crear-titular/page.js",
+  "/Usuario/licencias/page": "app/Usuario/licencias/page.js"
 }
